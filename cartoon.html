@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPEAK IT! - Cartoon English</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.cartoon-wrap {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+.cartoon-header {
+  text-align: center;
+  padding: 30px 10px;
+}
+.cartoon-header h1 { font-size: 32px; }
+.cartoon-header p { line-height: 1.7; color: #777; }
+.show-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 13px;
+  margin: 20px 0 35px;
+}
+.show-card {
+  border: 1px solid #e5e2ed;
+  border-radius: 17px;
+  padding: 15px;
+  background: white;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+}
+.show-card.selected {
+  border: 2px solid #8279dc;
+  background: #f5f3ff;
+}
+.show-emoji { font-size: 35px; }
+.show-card h3 { margin: 8px 0; font-size: 16px; }
+.show-card p { margin: 0; font-size: 13px; color: #777; line-height: 1.5; }
+.section-title { margin-top: 30px; }
+.episode-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+.episode-card, .study-card {
+  border: 1px solid #e5e2ed;
+  border-radius: 16px;
+  padding: 17px;
+  background: white;
+}
+.episode-card {
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+}
+.episode-card.selected {
+  border: 2px solid #8279dc;
+  background: #f5f3ff;
+}
+.small-label { font-size: 12px; color: #8279dc; }
+.episode-card h3 { margin: 7px 0; }
+.episode-card p { color: #777; margin: 0; font-size: 14px; }
+.study-card { margin: 14px 0; line-height: 1.7; }
+.study-card h3 { margin-top: 5px; }
+.english-expression { font-size: 21px; font-weight: bold; }
+.meaning { color: #625b9b; }
+.action-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  margin: 5px 3px;
+  background: #8279dc;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+.action-btn.secondary {
+  background: #efedfa;
+  color: #514b91;
+}
+.hidden { display: none !important; }
+#translation { padding: 12px; background: #f5f3ff; border-radius: 12px; }
+.back-btn { margin-top: 15px; }
+@media(min-width:650px) {
+  .show-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .episode-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="cartoon-wrap">
+<header class="cartoon-header">
+  <p>🎬 SPEAK IT! SPECIAL LEARNING</p>
+  <h1>Cartoon English</h1>
+  <p>
+    좋아하는 카툰으로 진짜 원어민 영어를 배워봐요.<br>
+    재미있는 상황과 대화를 통해 자연스럽게 영어를 익혀요!
+  </p>
+</header>
+<section id="showSection">
+  <h2 class="section-title">📺 Choose Your Cartoon</h2>
+  <p>오늘 공부하고 싶은 만화를 골라주세요.</p>
+  <div class="show-grid" id="showGrid">
+    <button class="show-card" onclick="selectShow('스폰지밥')">
+      <div class="show-emoji">🍍</div>
+      <h3>스폰지밥</h3>
+      <p>SpongeBob SquarePants</p>
+      <p>유머 · 감탄 · 일상 회화</p>
+    </button>
+    <button class="show-card" onclick="selectShow('피니와 퍼브')">
+      <div class="show-emoji">🔧</div>
+      <h3>피니와 퍼브</h3>
+      <p>Phineas and Ferb</p>
+      <p>계획 · 설명 · 장난스러운 표현</p>
+    </button>
+    <button class="show-card" onclick="selectShow('어드벤처 타임')">
+      <div class="show-emoji">⚔️</div>
+      <h3>어드벤처 타임</h3>
+      <p>Adventure Time</p>
+      <p>감정 · 모험 · 친구 사이 대화</p>
+    </button>
+    <button class="show-card" onclick="selectShow('스쿠비 두')">
+      <div class="show-emoji">🐕</div>
+      <h3>스쿠비 두</h3>
+      <p>Scooby-Doo</p>
+      <p>추리 · 질문 · 놀라는 표현</p>
+    </button>
+    <button class="show-card" onclick="selectShow('검볼')">
+      <div class="show-emoji">🐱</div>
+      <h3>검볼</h3>
+      <p>The Amazing World of Gumball</p>
+      <p>일상 회화 · 농담 · 반응</p>
+    </button>
+    <button class="show-card" onclick="selectShow('프린세스 스타의 모험 일기')">
+      <div class="show-emoji">⭐</div>
+      <h3>프린세스 스타의 모험 일기</h3>
+      <p>Star vs. the Forces of Evil</p>
+      <p>감정 · 관계 · 모험 속 회화</p>
+    </button>
+  </div>
+</section>
+<section id="episodeSection" class="hidden">
+  <h2 id="showTitle">Episodes</h2>
+  <p>학습하고 싶은 에피소드를 선택하세요.</p>
+  <div class="episode-list" id="episodeList">
+    <button class="episode-card" onclick="selectEpisode(1)">
+      <span class="small-label">EPISODE 01</span>
+      <h3>첫 번째 이야기</h3>
+      <p>일상에서 자주 쓰는 자연스러운 표현</p>
+    </button>
+    <button class="episode-card" onclick="selectEpisode(2)">
+      <span class="small-label">EPISODE 02</span>
+      <h3>두 번째 이야기</h3>
+      <p>상황에 맞는 반응과 감정 표현</p>
+    </button>
+    <button class="episode-card" onclick="selectEpisode(3)">
+      <span class="small-label">EPISODE 03</span>
+      <h3>세 번째 이야기</h3>
+      <p>친구와 대화할 때 쓰는 표현</p>
+    </button>
+    <button class="episode-card" onclick="selectEpisode(4)">
+      <span class="small-label">EPISODE 04</span>
+      <h3>네 번째 이야기</h3>
+      <p>원어민이 자주 사용하는 구어체</p>
+    </button>
+  </div>
+  <button class="action-btn secondary back-btn" onclick="goBackToShows()">
+    ← 만화 다시 선택하기
+  </button>
+</section>
+<section id="studySection" class="hidden">
+  <h2 id="episodeTitle">Today's Expressions</h2>
+  <p>오늘의 핵심 표현을 배워봐요.</p>
+  <div class="study-card">
+    <span class="small-label">EXPRESSION 01</span>
+    <p class="english-expression">What's going on?</p>
+    <p class="meaning">무슨 일이야? / 어떻게 된 거야?</p>
+    <button class="action-btn secondary" onclick="speak('What\\'s going on?')">🔊 발음 듣기</button>
+    <p>무슨 일이 일어났는지 궁금하거나 상황을 이해하지 못했을 때 사용해요.</p>
+  </div>
+  <div class="study-card">
+    <span class="small-label">EXPRESSION 02</span>
+    <p class="english-expression">Are you serious?</p>
+    <p class="meaning">진심이야? / 정말이라고?</p>
+    <button class="action-btn secondary" onclick="speak('Are you serious?')">🔊 발음 듣기</button>
+    <p>상대방의 말이 믿기지 않거나 놀랐을 때 자연스럽게 사용해요.</p>
+  </div>
+  <div class="study-card">
+    <span class="small-label">EXPRESSION 03</span>
+    <p class="english-expression">That makes sense.</p>
+    <p class="meaning">그 말이 되네. / 이해가 돼.</p>
+    <button class="action-btn secondary" onclick="speak('That makes sense.')">🔊 발음 듣기</button>
+    <p>상대방의 설명을 듣고 납득했을 때 쓰는 표현이에요.</p>
+  </div>
+  <div class="study-card">
+    <h3>🎭 Situation Practice</h3>
+    <p>친구가 갑자기 이상한 행동을 했어요. 어떻게 반응할까요?</p>
+    <p><strong>추천 표현:</strong> What's going on?</p>
+    <button class="action-btn" onclick="speak('What\\'s going on?')">🔊 따라 말하기</button>
+  </div>
+  <div class="study-card">
+    <h3>📝 Quick Review</h3>
+    <p>오늘 배운 표현의 뜻을 확인해 보세요.</p>
+    <button class="action-btn" onclick="toggleTranslation()">뜻 확인하기</button>
+    <div id="translation" class="hidden">
+      What's going on? = 무슨 일이야?<br>
+      Are you serious? = 진심이야?<br>
+      That makes sense. = 그 말이 되네.
+    </div>
+  </div>
+  <button class="action-btn" onclick="completeEpisode()">오늘 학습 완료 🎉</button>
+  <button class="action-btn secondary" onclick="goBackToEpisodes()">← 에피소드 선택</button>
+</section>
+<footer style="text-align:center;margin:40px 0">
+  <a href="index.html">← SPEAK IT! 홈으로</a>
+</footer>
+</div>
+<script>
+let selectedShow = '';
+let selectedEpisode = 0;
+function selectShow(show) {
+  selectedShow = show;
+  document.getElementById('showTitle').textContent = '📺 ' + show + ' - Episodes';
+  document.getElementById('episodeSection').classList.remove('hidden');
+  document.getElementById('studySection').classList.add('hidden');
+  document.querySelectorAll('.show-card').forEach(card => {
+    card.classList.toggle('selected', card.innerText.includes(show));
+  });
+  document.getElementById('episodeSection').scrollIntoView({behavior:'smooth'});
+}
+function selectEpisode(number) {
+  selectedEpisode = number;
+  document.getElementById('episodeTitle').textContent =
+    selectedShow + ' · EPISODE 0' + number;
+  document.getElementById('studySection').classList.remove('hidden');
+  document.getElementById('translation').classList.add('hidden');
+  document.getElementById('studySection').scrollIntoView({behavior:'smooth'});
+}
+function speak(text) {
+  if (!('speechSynthesis' in window)) {
+    alert('이 브라우저에서는 음성 재생을 지원하지 않아요.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+}
+function toggleTranslation() {
+  document.getElementById('translation').classList.toggle('hidden');
+}
+function completeEpisode() {
+  const key = 'cartoonCompleted';
+  let completed = JSON.parse(localStorage.getItem(key) || '[]');
+  const item = selectedShow + '-EP' + selectedEpisode;
+  if (!completed.includes(item)) {
+    completed.push(item);
+  }
+  localStorage.setItem(key, JSON.stringify(completed));
+  alert('오늘의 학습을 완료했어요! 🎉');
+}
+function goBackToShows() {
+  document.getElementById('episodeSection').classList.add('hidden');
+  document.getElementById('studySection').classList.add('hidden');
+  document.getElementById('showSection').scrollIntoView({behavior:'smooth'});
+}
+function goBackToEpisodes() {
+  document.getElementById('studySection').classList.add('hidden');
+  document.getElementById('episodeSection').scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>
