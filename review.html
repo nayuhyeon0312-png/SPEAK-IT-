@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPEAK IT! - Review</title>
 <link rel="stylesheet" href="style.css">
+
 <style>
 .review-page{max-width:850px;margin:30px auto;padding:20px}
 .review-top{background:#eee8ff;padding:28px;border-radius:24px;margin-bottom:24px}
@@ -12,97 +13,268 @@
 .meaning{color:#7956b8;font-weight:bold}
 .example{background:#f8f6ff;padding:12px;border-radius:12px;margin-top:12px}
 button{border:0;border-radius:20px;padding:10px 16px;background:#eee8ff;color:#60458e;font-weight:bold;cursor:pointer;margin:5px}
+.complete-btn{background:#b9e8d1;color:#245d43}
 .answer{display:none;margin-top:12px;padding:12px;background:#f4f0ff;border-radius:12px}
 .back-link{display:inline-block;margin-bottom:20px;color:#7956b8;text-decoration:none;font-weight:bold}
+.next-info{color:#7956b8;font-weight:bold;margin-top:12px}
 </style>
 </head>
+
 <body>
 <main class="review-page">
+
 <a class="back-link" href="index.html">← Back to Home</a>
 
 <section class="review-top">
 <p>YOUR MEMORY ADVENTURE ✨</p>
 <h1>Vocabulary Review</h1>
-<p>전에 배운 영어를 다시 만나 봐요!</p>
+<p>잊어버리기 전에 다시 만나 봐요!</p>
 <h2 id="reviewCount">복습할 단어를 찾는 중...</h2>
+<p id="nextInfo" class="next-info"></p>
 </section>
 
 <div id="reviewList"></div>
+
 </main>
+
 <script src="vocabulary-data.js"></script>
+
 <script>
 const wordPacks = Array.from(
   { length: Math.ceil(vocabularyData.length / 40) },
   (_, index) => vocabularyData.slice(index * 40, (index + 1) * 40)
 );
 
-const progress = JSON.parse(localStorage.getItem("speakItProgress") || "{}");
-const reviewList = [];
+const today = new Date();
 
-wordPacks.forEach((pack,dayIndex) => {
-  pack.forEach((word,index) => {
-    const key = "day"+(dayIndex+1)+"_"+index;
-    const status = progress[key];
+const todayKey =
+  today.getFullYear() + "-" +
+  String(today.getMonth()+1).padStart(2,"0") + "-" +
+  String(today.getDate()).padStart(2,"0");
 
-    if(status === "known" || status === "review"){
-      reviewList.push({
-        word,
-        key,
-        day: dayIndex+1,
-        status
-      });
-    }
-  });
-});
+let progress = JSON.parse(
+  localStorage.getItem("speakItProgress") || "{}"
+);
 
-function speak(text){
-  if(!("speechSynthesis" in window)){
+let schedule = JSON.parse(
+  localStorage.getItem("speakItReviewSchedule") || "{}"
+);
+
+const intervals = [1, 3, 7, 14, 30];
+
+let dueReviews = [];
+
+function dateNumber(dateString) {
+  const parts = dateString.split("-").map(Number);
+  return Date.UTC(parts[0], parts[1]-1, parts[2]);
+}
+
+function addDaysToDate(dateString, days) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  const date = new Date(year, month-1, day);
+
+  date.setDate(date.getDate()+days);
+
+  return date.getFullYear() + "-" +
+    String(date.getMonth()+1).padStart(2,"0") + "-" +
+    String(date.getDate()).padStart(2,"0");
+}
+
+function saveData() {
+  localStorage.setItem(
+    "speakItProgress",
+    JSON.stringify(progress)
+  );
+
+  localStorage.setItem(
+    "speakItReviewSchedule",
+    JSON.stringify(schedule)
+  );
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) {
     alert("발음 듣기를 지원하지 않는 브라우저예요.");
     return;
   }
+
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "en-US";
-  speechSynthesis.speak(u);
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+
+  speechSynthesis.speak(utterance);
 }
 
-function render(){
-  const list = document.getElementById("reviewList");
-  document.getElementById("reviewCount").textContent =
-    reviewList.length + "개 학습 기록 발견";
+// 예전에 저장한 복습 기록도 이어서 사용할 수 있도록 준비
+function prepareSchedule() {
+  let changed = false;
 
-  if(reviewList.length === 0){
+  wordPacks.forEach((pack, dayIndex) => {
+    pack.forEach((word, index) => {
+      const key = "day" + (dayIndex+1) + "_" + index;
+      const status = progress[key];
+
+      if (status !== "known" && status !== "review") {
+        return;
+      }
+
+      if (!schedule[key]) {
+        schedule[key] = {
+          stage: 0,
+          nextDate: todayKey
+        };
+
+        changed = true;
+      }
+    });
+  });
+
+  if (changed) {
+    saveData();
+  }
+}
+
+// 복습 완료 버튼
+function completeReview(key) {
+  if (!schedule[key]) return;
+
+  const currentStage = Math.min(
+    4,
+    Math.max(0, Number(schedule[key].stage) || 0)
+  );
+
+  const nextStage = Math.min(currentStage+1, 4);
+  const days = intervals[nextStage];
+
+  schedule[key] = {
+    stage: nextStage,
+    nextDate: addDaysToDate(todayKey, days)
+  };
+
+  saveData();
+  render();
+}
+
+function showAnswer(index) {
+  const answer = document.getElementById("answer"+index);
+
+  answer.style.display =
+    answer.style.display === "block" ? "none" : "block";
+}
+
+function render() {
+  const list = document.getElementById("reviewList");
+
+  dueReviews = [];
+  let futureReviews = [];
+
+  wordPacks.forEach((pack, dayIndex) => {
+    pack.forEach((word, index) => {
+      const key = "day" + (dayIndex+1) + "_" + index;
+      const status = progress[key];
+
+      if (status !== "known" && status !== "review") {
+        return;
+      }
+
+      const itemSchedule = schedule[key];
+
+      if (!itemSchedule) return;
+
+      const item = {
+        word,
+        key,
+        day: dayIndex+1,
+        stage: itemSchedule.stage,
+        nextDate: itemSchedule.nextDate
+      };
+
+      if (itemSchedule.nextDate <= todayKey) {
+        dueReviews.push(item);
+      } else {
+        futureReviews.push(item);
+      }
+    });
+  });
+
+  document.getElementById("reviewCount").textContent =
+    "오늘 복습할 단어 " + dueReviews.length + "개";
+
+  if (dueReviews.length === 0) {
+    if (futureReviews.length === 0) {
+      document.getElementById("nextInfo").textContent = "";
+
+      list.innerHTML = `
+        <div class="review-card">
+          <h3>아직 복습할 단어가 없어요! 🌱</h3>
+          <p>단어장에서 '알고 있어요' 또는 '복습 필요'를 선택해 주세요.</p>
+          <a href="vocabulary.html">단어장으로 가기 →</a>
+        </div>`;
+      return;
+    }
+
+    futureReviews.sort((a,b) =>
+      a.nextDate.localeCompare(b.nextDate)
+    );
+
+    document.getElementById("nextInfo").textContent =
+      "다음 복습 예정: " + futureReviews[0].nextDate +
+      " · 예정 단어 " + futureReviews.length + "개";
+
     list.innerHTML = `
       <div class="review-card">
-        <h3>아직 복습할 단어가 없어요! 🌱</h3>
-        <p>단어장에서 '알고 있어요' 또는 '복습 필요'를 선택하면 여기에 나타나요.</p>
-        <a href="vocabulary.html">단어장으로 가기 →</a>
+        <h3>오늘 복습은 끝났어요! 🎉</h3>
+        <p>아직 복습 날짜가 되지 않은 단어들이 있어요.</p>
+        <p class="meaning">
+          다음 복습 날짜: ${futureReviews[0].nextDate}
+        </p>
+        <p>예정된 단어: ${futureReviews.length}개</p>
       </div>`;
     return;
   }
 
-  list.innerHTML = reviewList.map((item,index) => `
+  document.getElementById("nextInfo").textContent =
+    "오늘의 복습을 완료하고 다음 단계로 나아가요!";
+
+  list.innerHTML = dueReviews.map((item,index) => `
     <article class="review-card">
-      <p class="meaning">DAY ${String(item.day).padStart(2,"0")} · ${item.status==="known"?"알고 있어요":"복습 필요"}</p>
+
+      <p class="meaning">
+        DAY ${String(item.day).padStart(2,"0")}
+        · ${item.stage === 0 ? "첫 복습" : "복습 " + (item.stage+1) + "단계"}
+      </p>
+
       <h2>${index+1}. ${item.word[0]}</h2>
-      <button onclick="speak('${item.word[0].replace(/'/g,"\\'")}')">🔊 발음 듣기</button>
-      <button onclick="showAnswer(${index})">뜻과 예문 보기</button>
+
+      <button onclick="speak(dueReviews[${index}].word[0])">
+        🔊 발음 듣기
+      </button>
+
+      <button onclick="showAnswer(${index})">
+        뜻과 예문 보기
+      </button>
+
       <div class="answer" id="answer${index}">
         <p class="meaning">${item.word[1]}</p>
         <p>${item.word[2]}</p>
         <p>${item.word[3]}</p>
       </div>
+
+      <div>
+        <button class="complete-btn"
+          onclick="completeReview('${item.key}')">
+          ✓ 복습 완료
+        </button>
+      </div>
+
     </article>
   `).join("");
 }
 
-function showAnswer(index){
-  const answer = document.getElementById("answer"+index);
-  answer.style.display =
-    answer.style.display === "block" ? "none" : "block";
-}
-
+prepareSchedule();
 render();
 </script>
+
 </body>
 </html>
