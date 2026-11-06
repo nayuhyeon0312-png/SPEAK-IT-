@@ -1,0 +1,151 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  background: #fffaf0;
+  color: #41404b;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 7%;
+  background: #fff;
+}
+
+.logo {
+  font-family: 'Jua', sans-serif;
+  font-size: 30px;
+  color: #7c75d8;
+  text-decoration: none;
+}
+
+.header-text {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #aaa;
+}
+
+main {
+  max-width: 1050px;
+  margin: auto;
+  padding: 35px 20px;
+}
+
+.welcome {
+  background: #d9d5ff;
+  border-radius: 30px;
+  padding: 55px 35px;
+  text-align: center;
+  box-shadow: 0 8px 0 #bdb5ed;
+}
+
+.welcome-label {
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #7770bf;
+}
+
+h1, h2, h3 {
+  font-family: 'Jua', sans-serif;
+}
+
+.welcome h1 {
+  font-size: clamp(42px, 8vw, 68px);
+  line-height: 1.1;
+  color: #514a9e;
+  margin: 18px 0;
+}
+
+.welcome button {
+  border: none;
+  border-radius: 30px;
+  background: #ffb76b;
+  color: #fff;
+  padding: 16px 27px;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #e79a52;
+}
+
+.today {
+  margin-top: 55px;
+}
+
+.today-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #fff;
+  padding: 22px;
+  border-radius: 22px;
+  box-shadow: 0 4px 15px #e9e2d5;
+}
+
+.today-card > span {
+  font-size: 40px;
+}
+
+.today-card h3,
+.today-card p {
+  margin: 5px 0;
+}
+
+.menu {
+  margin-top: 55px;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 25px 10px;
+  border-radius: 22px;
+  background: #fff;
+  color: #55516d;
+  text-decoration: none;
+  font-weight: 900;
+  box-shadow: 0 4px 12px #e9e2d5;
+  transition: transform 0.2s;
+}
+
+.menu-card:hover {
+  transform: translateY(-5px);
+}
+
+footer {
+  text-align: center;
+  padding: 35px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+@media (max-width: 550px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header-text {
+    font-size: 9px;
+  }
+
+  .welcome {
+    padding: 40px 18px;
+  }
+}
