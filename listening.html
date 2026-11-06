@@ -6,6 +6,7 @@
 <title>SPEAK IT! - Listening</title>
 <style>
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   padding: 20px;
@@ -13,8 +14,10 @@ body {
   background: #f7f8fc;
   color: #30364a;
 }
+
 .container { max-width: 850px; margin: auto; }
 h1 { color: #6578d3; }
+
 .card {
   background: white;
   padding: 20px;
@@ -22,15 +25,16 @@ h1 { color: #6578d3; }
   margin: 18px 0;
   box-shadow: 0 4px 15px #0000000a;
 }
-input, textarea {
+
+input {
   width: 100%;
-  padding: 13px;
+  padding: 14px;
   border: 1px solid #ddd;
   border-radius: 10px;
   font-size: 15px;
-  margin: 8px 0;
+  margin: 10px 0;
 }
-textarea { min-height: 150px; resize: vertical; }
+
 button {
   border: 0;
   border-radius: 10px;
@@ -41,6 +45,12 @@ button {
   cursor: pointer;
   margin: 4px;
 }
+
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .video {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -49,7 +59,12 @@ button {
   overflow: hidden;
   position: relative;
 }
-#player { width: 100%; height: 100%; }
+
+#youtubePlayer {
+  width: 100%;
+  height: 100%;
+}
+
 .subtitle-overlay {
   position: absolute;
   left: 3%;
@@ -61,9 +76,9 @@ button {
   flex-direction: column;
   gap: 7px;
 }
+
 .subtitle-line {
-  display: inline-block;
-  width: fit-content;
+  display: table;
   max-width: 100%;
   margin: auto;
   padding: 7px 12px;
@@ -74,101 +89,127 @@ button {
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-#englishSubtitle { color: #fff; }
+
 #koreanSubtitle { color: #ffe6a8; }
+
+.status {
+  color: #6578d3;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .note {
   background: #f0f2ff;
   padding: 14px;
   border-radius: 12px;
   line-height: 1.7;
 }
-.status { color: #6578d3; font-size: 14px; }
+
 a { color: #6578d3; }
 </style>
 </head>
+
 <body>
 <div class="container">
+
   <a href="index.html">← 홈으로</a>
+
   <h1>🎧 Listening</h1>
-  <p>영어와 한국어 자막을 함께 보며 듣기 연습을 해 봐요!</p>
+  <p>영상과 함께 영어를 듣고 한국어 뜻도 확인해 봐요!</p>
 
   <div class="card">
     <h2>📺 유튜브 영상</h2>
-    <input id="videoUrl" placeholder="유튜브 영상 주소를 입력하세요">
+
+    <input
+      id="videoUrl"
+      placeholder="유튜브 영상 주소를 입력하세요"
+    >
+
     <button onclick="loadVideo()">영상 불러오기</button>
-    <p id="videoStatus" class="status">영상 주소를 입력해 주세요.</p>
+
+    <button id="subtitleButton" onclick="loadAutoSubtitles()">
+      ✨ AI 자막 생성 및 번역
+    </button>
+
+    <p id="videoStatus" class="status">
+      유튜브 주소를 입력해 주세요.
+    </p>
   </div>
 
   <div class="card">
     <h2>▶️ 영상 플레이어</h2>
+
     <div class="video">
-      <div id="player"></div>
+      <div id="youtubePlayer"></div>
+
       <div class="subtitle-overlay">
         <div id="englishSubtitle" class="subtitle-line"></div>
         <div id="koreanSubtitle" class="subtitle-line"></div>
       </div>
     </div>
+
+    <div style="margin-top:12px;">
+      <button onclick="toggleEnglish()">EN 영어 자막</button>
+      <button onclick="toggleKorean()">KO 한국어 자막</button>
+    </div>
+
     <p class="note">
-      자막은 영상 재생 시간에 맞춰 표시돼요.
-      아래에 영어와 한국어 SRT 자막 내용을 넣어 주세요.
+      영상 재생 시간에 맞춰 영어와 한국어 자막이 자동으로 바뀝니다.
+    </p>
+
+    <p id="subtitleStatus" class="status">
+      아직 자막을 불러오지 않았어요.
     </p>
   </div>
 
-  <div class="card">
-    <h2>🇺🇸 영어 자막</h2>
-    <textarea id="englishSrt" placeholder="영어 SRT 자막 내용을 붙여넣으세요."></textarea>
-
-    <h2>🇰🇷 한국어 자막</h2>
-    <textarea id="koreanSrt" placeholder="한국어 SRT 자막 내용을 붙여넣으세요."></textarea>
-
-    <button onclick="loadSubtitles()">자막 적용하기</button>
-    <p id="subtitleStatus" class="status">아직 자막이 적용되지 않았어요.</p>
-  </div>
 </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-let player = null;
-let englishCaptions = [];
-let koreanCaptions = [];
-let syncTimer = null;
+const API_URL =
+  "https://mellow-watch-learn.onrender.com/api/transcript";
 
-function getVideoId(url) {
+let player = null;
+let captions = [];
+let syncTimer = null;
+let showEnglish = true;
+let showKorean = true;
+let pendingVideoId = null;
+let youtubeReady = false;
+
+function getVideoId(value) {
   try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname.split("/")[1] || "";
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      return url.pathname.split("/").filter(Boolean)[0] || "";
     }
-    if (parsed.hostname.includes("youtube.com")) {
-      return parsed.searchParams.get("v") ||
-        (parsed.pathname.includes("/shorts/")
-          ? parsed.pathname.split("/shorts/")[1].split("/")[0]
-          : "");
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      return url.searchParams.get("v") ||
+        (url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/) || [])[1] || "";
     }
-  } catch (e) {}
+  } catch (error) {}
+
   return "";
 }
 
-function loadVideo() {
-  const id = getVideoId(document.getElementById("videoUrl").value.trim());
-
-  if (!id) {
-    alert("올바른 유튜브 주소를 입력해 주세요.");
-    return;
-  }
-
-  if (typeof YT === "undefined" || !YT.Player) {
-    document.getElementById("videoStatus").textContent =
-      "유튜브 플레이어를 불러오는 중이에요. 잠시 후 다시 눌러 주세요.";
+function createPlayer(videoId) {
+  if (!youtubeReady || !window.YT || !YT.Player) {
+    pendingVideoId = videoId;
     return;
   }
 
   if (player && player.destroy) {
     player.destroy();
+    player = null;
   }
 
-  player = new YT.Player("player", {
-    videoId: id,
+  document.getElementById("youtubePlayer").innerHTML = "";
+
+  player = new YT.Player("youtubePlayer", {
+    videoId: videoId,
     playerVars: {
       playsinline: 1,
       rel: 0
@@ -181,88 +222,144 @@ function loadVideo() {
       },
       onError: function() {
         document.getElementById("videoStatus").textContent =
-          "이 영상은 외부 사이트 재생이 제한되어 있을 수 있어요.";
+          "이 영상은 외부 재생이 제한되어 있을 수 있어요.";
       }
     }
   });
 }
 
-function parseSrt(text) {
-  const blocks = text.trim().replace(/\r/g, "").split(/\n\s*\n/);
-  const result = [];
+function loadVideo() {
+  const url = document.getElementById("videoUrl").value.trim();
+  const videoId = getVideoId(url);
 
-  for (const block of blocks) {
-    const lines = block.split("\n");
-    const timeLine = lines.find(line => line.includes("-->"));
-    if (!timeLine) continue;
-
-    const match = timeLine.match(
-      /(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/
-    );
-    if (!match) continue;
-
-    const toSeconds = (h, m, s, ms) =>
-      Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(ms) / 1000;
-
-    const start = toSeconds(...match.slice(1, 5));
-    const end = toSeconds(...match.slice(5, 9));
-    const textLines = lines.slice(lines.indexOf(timeLine) + 1);
-
-    const captionText = textLines.join(" ")
-      .replace(/<[^>]*>/g, "")
-      .trim();
-
-    if (captionText) result.push({ start, end, text: captionText });
-  }
-
-  return result.sort((a, b) => a.start - b.start);
-}
-
-function loadSubtitles() {
-  const enText = document.getElementById("englishSrt").value;
-  const koText = document.getElementById("koreanSrt").value;
-
-  englishCaptions = parseSrt(enText);
-  koreanCaptions = parseSrt(koText);
-
-  if (!englishCaptions.length && !koreanCaptions.length) {
-    document.getElementById("subtitleStatus").textContent =
-      "읽을 수 있는 SRT 자막이 없어요. 자막 형식을 확인해 주세요.";
+  if (!videoId) {
+    alert("올바른 유튜브 주소를 입력해 주세요.");
     return;
   }
 
-  document.getElementById("subtitleStatus").textContent =
-    "영어 " + englishCaptions.length + "개 / 한국어 " +
-    koreanCaptions.length + "개 자막을 적용했어요!";
+  captions = [];
   updateSubtitles();
+
+  document.getElementById("subtitleStatus").textContent =
+    "새 영상의 자막을 기다리고 있어요.";
+
+  document.getElementById("videoStatus").textContent =
+    "영상을 불러오고 있어요...";
+
+  createPlayer(videoId);
 }
 
-function findCaption(captions, time) {
-  return captions.find(item => time >= item.start && time <= item.end);
+async function loadAutoSubtitles() {
+  const url = document.getElementById("videoUrl").value.trim();
+  const videoId = getVideoId(url);
+  const button = document.getElementById("subtitleButton");
+
+  if (!videoId) {
+    alert("먼저 올바른 유튜브 주소를 입력해 주세요.");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "⏳ AI 자막 만드는 중...";
+  document.getElementById("subtitleStatus").textContent =
+    "영어 자막을 가져오고 한국어로 번역하고 있어요.\n영상에 따라 시간이 걸릴 수 있어요.";
+
+  captions = [];
+  updateSubtitles();
+
+  try {
+    const response = await fetch(
+      API_URL + "?url=" + encodeURIComponent(url)
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "자막을 가져오지 못했어요.");
+    }
+
+    if (!Array.isArray(data.segments) || data.segments.length === 0) {
+      throw new Error("표시할 자막이 없어요.");
+    }
+
+    captions = data.segments
+      .map(item => ({
+        start: Number(item.start),
+        end: Number(item.end),
+        en: String(item.en || ""),
+        ko: String(item.ko || "")
+      }))
+      .filter(item =>
+        Number.isFinite(item.start) &&
+        Number.isFinite(item.end)
+      )
+      .sort((a, b) => a.start - b.start);
+
+    document.getElementById("subtitleStatus").textContent =
+      "🎉 자막 준비 완료!\n영어와 한국어 자막 " +
+      captions.length + "개를 불러왔어요.";
+
+    updateSubtitles();
+
+  } catch (error) {
+    document.getElementById("subtitleStatus").textContent =
+      "자막 오류: " + error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "✨ AI 자막 생성 및 번역";
+  }
 }
 
 function updateSubtitles() {
-  if (!player || !player.getCurrentTime) return;
+  let current = null;
 
-  const time = player.getCurrentTime();
-  const en = findCaption(englishCaptions, time);
-  const ko = findCaption(koreanCaptions, time);
+  if (player && player.getCurrentTime) {
+    const time = player.getCurrentTime();
+
+    current = captions.find(item =>
+      time >= item.start && time < item.end
+    );
+  }
 
   document.getElementById("englishSubtitle").textContent =
-    en ? en.text : "";
+    current && showEnglish ? current.en : "";
+
   document.getElementById("koreanSubtitle").textContent =
-    ko ? ko.text : "";
+    current && showKorean ? current.ko : "";
 }
 
 function startSync() {
   if (syncTimer) clearInterval(syncTimer);
-  syncTimer = setInterval(updateSubtitles, 250);
+  syncTimer = setInterval(updateSubtitles, 200);
+}
+
+function toggleEnglish() {
+  showEnglish = !showEnglish;
+  updateSubtitles();
+}
+
+function toggleKorean() {
+  showKorean = !showKorean;
+  updateSubtitles();
 }
 
 window.onYouTubeIframeAPIReady = function() {
+  youtubeReady = true;
+
+  if (pendingVideoId) {
+    const id = pendingVideoId;
+    pendingVideoId = null;
+    createPlayer(id);
+  }
+
   document.getElementById("videoStatus").textContent =
     "유튜브 플레이어를 사용할 준비가 됐어요.";
 };
+
+const youtubeScript = document.createElement("script");
+youtubeScript.src = "https://www.youtube.com/iframe_api";
+document.head.appendChild(youtubeScript);
 </script>
+
 </body>
 </html>
