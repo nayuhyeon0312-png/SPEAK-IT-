@@ -55,6 +55,7 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+button:disabled { opacity: .55; cursor: wait; }
 .listen { background: #eeeaff; color: #6854bd; }
 .primary { background: #7867d8; color: white; }
 .secondary { background: #f0f1f8; color: #555975; }
@@ -87,14 +88,42 @@ textarea:focus { outline: 2px solid #c9c0ff; }
   transition: width .2s;
 }
 #count { color: #8588a0; font-size: 14px; }
+
+.feedback-section { display: none; }
+.feedback-section h3 { margin-top: 0; }
+.feedback-item {
+  padding: 15px;
+  margin-top: 12px;
+  border-radius: 13px;
+  background: #f7f6ff;
+}
+.feedback-label {
+  color: #7461c8;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.feedback-content {
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.expression {
+  font-size: 19px;
+  font-weight: bold;
+  color: #5545a5;
+}
 </style>
 </head>
+
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← 홈으로 돌아가기</a>
 
   <h1>🗣️ Speaking</h1>
-  <p class="sub">매일 질문에 영어로 대답하면서 자연스럽게 말하는 연습을 해봐요!</p>
+  <p class="sub">
+    매일 질문에 영어로 대답하면서 자연스럽게 말하는 연습을 해봐요!
+  </p>
 
   <div class="card">
     <div id="count">Question 1 / 10</div>
@@ -108,20 +137,69 @@ textarea:focus { outline: 2px solid #c9c0ff; }
       <button class="listen" onclick="speakQuestion()">🔊 질문 듣기</button>
       <button class="secondary" onclick="showTranslation()">뜻 보기</button>
     </div>
-    <p class="hint" id="meaningHint">먼저 영어 질문을 이해해 보고, 뜻이 궁금하면 눌러 보세요.</p>
+    <p class="hint" id="meaningHint">
+      먼저 영어 질문을 이해해 보고, 뜻이 궁금하면 눌러 보세요.
+    </p>
   </div>
 
   <div class="card">
     <h3>✍️ My Answer</h3>
-    <p class="sub">정답은 없어요. 배운 표현을 활용해서 자유롭게 대답해 보세요.</p>
+    <p class="sub">
+      정답은 없어요. 배운 표현을 활용해서 자유롭게 대답해 보세요.
+    </p>
     <textarea id="answer" placeholder="Write your answer in English..."></textarea>
-    <p class="hint">먼저 직접 소리 내어 말한 다음, 영어로 답변을 적어 보세요.</p>
+    <p class="hint">
+      먼저 직접 소리 내어 말한 다음, 영어로 답변을 적어 보세요.
+    </p>
+
     <div class="buttons">
       <button class="primary" onclick="saveAnswer()">답변 저장하기</button>
       <button class="secondary" onclick="speakAnswer()">내 답변 듣기</button>
       <button class="secondary" onclick="markComplete()">연습 완료 ✓</button>
     </div>
     <p id="status"></p>
+  </div>
+
+  <div class="card">
+    <h3>💜 Native Speaker Feedback</h3>
+    <p class="sub">
+      원어민이 실제로 들었을 때 어떻게 느낄지 AI가 알려줘요.
+      문법 시험이 아니라 자연스러운 대화를 위한 피드백이에요.
+    </p>
+
+    <button class="primary" id="feedbackButton" onclick="getFeedback()" style="width:100%; margin-top:12px;">
+      ✨ 원어민 관점으로 피드백 받기
+    </button>
+
+    <p class="hint" id="feedbackStatus"></p>
+
+    <div class="feedback-section" id="feedbackResult">
+      <div class="feedback-item">
+        <div class="feedback-label">👂 1. 이해 가능성</div>
+        <div class="feedback-content" id="understanding"></div>
+      </div>
+
+      <div class="feedback-item">
+        <div class="feedback-label">💬 2. 자연스러움</div>
+        <div class="feedback-content" id="naturalness"></div>
+      </div>
+
+      <div class="feedback-item">
+        <div class="feedback-label">🌿 3. 더 자연스러운 표현</div>
+        <div class="feedback-content expression" id="betterExpression"></div>
+        <p class="feedback-content" id="expressionTranslation"></p>
+      </div>
+
+      <div class="feedback-item">
+        <div class="feedback-label">💡 4. 왜 이 표현을 쓸까?</div>
+        <div class="feedback-content" id="why"></div>
+      </div>
+
+      <div class="feedback-item">
+        <div class="feedback-label">⭐ 5. 실제 대화 팁</div>
+        <div class="feedback-content" id="tip"></div>
+      </div>
+    </div>
   </div>
 
   <div class="buttons" style="justify-content:space-between; margin-top:20px;">
@@ -131,6 +209,8 @@ textarea:focus { outline: 2px solid #c9c0ff; }
 </div>
 
 <script>
+const API_URL = "https://speak-it-hiz0.onrender.com/api/speaking-feedback";
+
 const questions = [
   {
     category: "Daily Life",
@@ -185,27 +265,48 @@ const questions = [
 ];
 
 let current = 0;
-const answers = JSON.parse(localStorage.getItem("speakItSpeakingAnswers") || "{}");
-const completed = JSON.parse(localStorage.getItem("speakItSpeakingCompleted") || "[]");
+
+const answers = JSON.parse(
+  localStorage.getItem("speakItSpeakingAnswers") || "{}"
+);
+
+const completed = JSON.parse(
+  localStorage.getItem("speakItSpeakingCompleted") || "[]"
+);
 
 function render() {
   const q = questions[current];
+
   document.getElementById("count").textContent =
     `Question ${current + 1} / ${questions.length}`;
+
   document.getElementById("bar").style.width =
     `${((current + 1) / questions.length) * 100}%`;
+
   document.getElementById("category").textContent = q.category;
   document.getElementById("question").textContent = q.en;
   document.getElementById("translation").textContent = "";
+
   document.getElementById("meaningHint").textContent =
     "먼저 영어 질문을 이해해 보고, 뜻이 궁금하면 눌러 보세요.";
+
   document.getElementById("answer").value = answers[current] || "";
+
   document.getElementById("status").textContent =
-    completed.includes(current) ? "이 질문은 연습 완료했어요! ✓" : "";
+    completed.includes(current)
+      ? "이 질문은 연습 완료했어요! ✓"
+      : "";
+
+  document.getElementById("feedbackResult").style.display = "none";
+  document.getElementById("feedbackStatus").textContent = "";
+  document.getElementById("feedbackButton").disabled = false;
+  document.getElementById("feedbackButton").textContent =
+    "✨ 원어민 관점으로 피드백 받기";
 }
 
 function showTranslation() {
-  document.getElementById("translation").textContent = questions[current].ko;
+  document.getElementById("translation").textContent =
+    questions[current].ko;
 }
 
 function speakQuestion() {
@@ -214,11 +315,13 @@ function speakQuestion() {
 
 function speakAnswer() {
   const value = document.getElementById("answer").value.trim();
+
   if (!value) {
     document.getElementById("status").textContent =
       "먼저 영어 답변을 입력해 주세요.";
     return;
   }
+
   speakText(value);
 }
 
@@ -228,25 +331,44 @@ function speakText(text) {
       "이 브라우저에서는 음성 듣기를 지원하지 않아요.";
     return;
   }
+
   window.speechSynthesis.cancel();
+
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "en-US";
   utterance.rate = 0.85;
+
   window.speechSynthesis.speak(utterance);
 }
 
 function saveAnswer() {
   answers[current] = document.getElementById("answer").value.trim();
-  localStorage.setItem("speakItSpeakingAnswers", JSON.stringify(answers));
-  document.getElementById("status").textContent = "답변이 저장됐어요! 💜";
+
+  localStorage.setItem(
+    "speakItSpeakingAnswers",
+    JSON.stringify(answers)
+  );
+
+  document.getElementById("status").textContent =
+    "답변이 저장됐어요! 💜";
 }
 
 function markComplete() {
   answers[current] = document.getElementById("answer").value.trim();
-  localStorage.setItem("speakItSpeakingAnswers", JSON.stringify(answers));
 
-  if (!completed.includes(current)) completed.push(current);
-  localStorage.setItem("speakItSpeakingCompleted", JSON.stringify(completed));
+  localStorage.setItem(
+    "speakItSpeakingAnswers",
+    JSON.stringify(answers)
+  );
+
+  if (!completed.includes(current)) {
+    completed.push(current);
+  }
+
+  localStorage.setItem(
+    "speakItSpeakingCompleted",
+    JSON.stringify(completed)
+  );
 
   document.getElementById("status").textContent =
     `연습 완료! 지금까지 ${completed.length}개 질문을 연습했어요. 🎉`;
@@ -254,8 +376,92 @@ function markComplete() {
 
 function moveQuestion(direction) {
   saveAnswer();
-  current = (current + direction + questions.length) % questions.length;
+
+  current =
+    (current + direction + questions.length) % questions.length;
+
   render();
+}
+
+function showFeedback(feedback) {
+  const fields = {
+    understanding: "understanding",
+    naturalness: "naturalness",
+    better_expression: "betterExpression",
+    expression_translation: "expressionTranslation",
+    why: "why",
+    tip: "tip"
+  };
+
+  for (const [key, elementId] of Object.entries(fields)) {
+    document.getElementById(elementId).textContent =
+      feedback[key] || "내용이 없어요.";
+  }
+
+  document.getElementById("feedbackResult").style.display = "block";
+}
+
+async function getFeedback() {
+  const answer = document.getElementById("answer").value.trim();
+  const button = document.getElementById("feedbackButton");
+  const status = document.getElementById("feedbackStatus");
+
+  if (!answer) {
+    status.textContent = "먼저 영어 답변을 작성해 주세요! 💜";
+    return;
+  }
+
+  answers[current] = answer;
+
+  localStorage.setItem(
+    "speakItSpeakingAnswers",
+    JSON.stringify(answers)
+  );
+
+  button.disabled = true;
+  button.textContent = "AI가 답변을 살펴보고 있어요...";
+  status.textContent =
+    "원어민이 실제 대화에서 어떻게 느낄지 분석하고 있어요. 잠시만 기다려 주세요!";
+
+  document.getElementById("feedbackResult").style.display = "none";
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question: questions[current].en,
+        answer: answer
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI 요청에 실패했어요.");
+    }
+
+    if (!data.feedback) {
+      throw new Error("피드백 결과를 받지 못했어요.");
+    }
+
+    showFeedback(data.feedback);
+
+    status.textContent = "피드백이 도착했어요! 천천히 읽어 보세요. 💜";
+
+  } catch (error) {
+    console.error(error);
+
+    status.textContent =
+      "피드백을 가져오지 못했어요. 서버가 잠에서 깨어나는 중일 수 있으니 잠시 후 다시 시도해 주세요. (" +
+      error.message + ")";
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "✨ 다시 피드백 받기";
+  }
 }
 
 render();
