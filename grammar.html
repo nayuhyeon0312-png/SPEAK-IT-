@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPEAK IT! - Grammar</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin:0; padding:18px;
+  background:#f8f7fc; color:#383348;
+  font-family:Arial,sans-serif;
+}
+.container { max-width:760px; margin:auto; }
+header { text-align:center; padding:20px 0; }
+header h1 { color:#8273c9; margin-bottom:8px; }
+header p { color:#777; line-height:1.6; }
+.home { color:#8273c9; text-decoration:none; }
+.card {
+  background:white; border-radius:18px;
+  padding:20px; margin:15px 0;
+  box-shadow:0 3px 12px #ddd6;
+}
+h2 { font-size:20px; margin-top:8px; }
+h3 { font-size:16px; }
+.tag { color:#8876cb; font-size:12px; font-weight:bold; }
+.muted { color:#888; font-size:13px; }
+.pattern {
+  background:#f1effb; padding:17px;
+  border-radius:12px; text-align:center;
+  font-size:20px; font-weight:bold;
+  margin:15px 0;
+}
+.example {
+  border-left:3px solid #a99be5;
+  padding:9px 12px; margin:12px 0;
+  line-height:1.5;
+}
+.example small { display:block; color:#888; margin-top:4px; }
+button, select, input, textarea {
+  font:inherit;
+}
+button {
+  border:0; border-radius:11px;
+  padding:12px 16px; margin:4px 3px 4px 0;
+  background:#8979cd; color:white;
+  cursor:pointer;
+}
+button.secondary { background:#eeeaf9; color:#62539f; }
+button:disabled { opacity:.5; }
+input, textarea, select {
+  width:100%; padding:13px;
+  border:1px solid #ddd; border-radius:10px;
+  margin:8px 0; background:white;
+}
+textarea { min-height:90px; resize:vertical; }
+.option {
+  display:block; width:100%; text-align:left;
+  background:#f1effb; color:#40385e;
+  margin:8px 0;
+}
+.option:disabled { opacity:1; }
+.option.correct { background:#dff3e6; color:#28643b; }
+.option.wrong { background:#fbe5e5; color:#9a3535; }
+.pill {
+  display:inline-block; padding:7px 11px;
+  border-radius:20px; background:#f1effb;
+  color:#6555a4; font-size:12px; margin:3px;
+}
+.progress-bg {
+  height:9px; background:#eeeaf5;
+  border-radius:20px; overflow:hidden; margin:12px 0;
+}
+.progress-fill {
+  height:100%; background:#9685d7; width:0%;
+}
+.lesson-list {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+}
+.lesson-item {
+  background:#f3f1fa; color:#51456f;
+  text-align:left; min-height:55px;
+}
+.lesson-item.active { background:#8979cd; color:white; }
+.lesson-item.done::after { content:" ✓"; }
+#feedback, #sentenceResult { line-height:1.7; margin-top:12px; }
+.hidden { display:none; }
+hr { border:0; border-top:1px solid #eee; margin:18px 0; }
+@media(max-width:450px) {
+  .lesson-list { grid-template-columns:1fr; }
+  body { padding:13px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<a class="home" href="index.html">← Home</a>
+
+<header>
+  <h1>🧩 Grammar</h1>
+  <p>Build natural English, one sentence at a time.<br>
+  실제 대화에서 바로 사용할 수 있는 영어 문법을 배워요.</p>
+</header>
+
+<div class="card">
+  <div class="tag">MY LEARNING</div>
+  <h2>나의 학습 현황</h2>
+  <p id="stats">학습을 시작해 보세요!</p>
+  <div class="progress-bg"><div class="progress-fill" id="progressBar"></div></div>
+  <p class="muted" id="progressText"></p>
+</div>
+
+<div class="card">
+  <div class="tag">LESSON MENU</div>
+  <h2>학습할 내용</h2>
+  <div id="lessonList" class="lesson-list"></div>
+</div>
+
+<div class="card">
+  <div class="tag" id="lessonCategory">GRAMMAR LESSON</div>
+  <p class="muted" id="lessonNumber"></p>
+  <h2 id="lessonTitle"></h2>
+  <div class="pattern" id="lessonPattern"></div>
+  <p id="lessonExplanation" style="line-height:1.8"></p>
+  <div id="lessonExamples"></div>
+  <hr>
+  <button class="secondary" onclick="previousLesson()">← 이전</button>
+  <button onclick="nextLesson()">다음 학습 →</button>
+  <button class="secondary" onclick="completeLesson()">학습 완료 ✓</button>
+</div>
+
+<div class="card">
+  <div class="tag">PRACTICE</div>
+  <h2>직접 골라 볼까요?</h2>
+  <p class="muted">배운 내용을 실제 문장에 적용해 보세요.</p>
+  <p id="quizCategory" class="pill"></p>
+  <h3 id="quizQuestion"></h3>
+  <div id="quizOptions"></div>
+  <div id="feedback"></div>
+  <button class="secondary" onclick="nextQuiz()">다음 문제 →</button>
+</div>
+
+<div class="card">
+  <div class="tag">MAKE YOUR OWN SENTENCE</div>
+  <h2>나만의 영어 문장 만들기</h2>
+  <p id="writingPrompt" style="line-height:1.7"></p>
+  <textarea id="mySentence" placeholder="Write your own sentence in English..."></textarea>
+  <button onclick="saveSentence()">문장 저장하기</button>
+  <p id="sentenceResult"></p>
+  <hr>
+  <h3>내가 저장한 문장</h3>
+  <div id="savedSentences" class="muted">아직 저장한 문장이 없어요.</div>
+</div>
+
+</div>
+
+<script>
+const lessons = [
+{
+category:"01. 문장 기본",
+title:"영어 문장의 기본 순서",
+pattern:"주어 + 동사 + 목적어",
+explanation:"영어는 보통 누가(주어) 무엇을 한다(동사)를 먼저 말하고, 그 뒤에 대상을 붙여요. 한국어와 어순이 다르기 때문에 이 순서에 익숙해지는 게 중요해요.",
+examples:[
+["I like coffee.","나는 커피를 좋아해."],
+["She watches movies.","그녀는 영화를 봐."],
+["We need some help.","우리는 도움이 필요해."]
+]
+},
+{
+category:"01. 문장 기본",
+title:"be동사: 상태와 설명",
+pattern:"I am / You are / He is",
+explanation:"사람이나 사물의 상태, 정체, 특징을 말할 때 사용해요. 주어에 따라 am, are, is를 자연스럽게 선택하면 돼요.",
+examples:[
+["I'm tired.","나 피곤해."],
+["She's my friend.","그녀는 내 친구야."],
+["They're happy.","그들은 행복해."]
+]
+},
+{
+category:"01. 문장 기본",
+title:"일반동사: 일상적인 행동",
+pattern:"주어 + 동사",
+explanation:"좋아하다, 먹다, 가다, 일하다처럼 행동이나 습관을 표현해요. he, she, it이 주어인 현재형 문장에서는 보통 동사에 -s가 붙어요.",
+examples:[
+["I work from home.","나는 집에서 일해."],
+["He likes music.","그는 음악을 좋아해."],
+["We live in Korea.","우리는 한국에 살아."]
+]
+},
+{
+category:"01. 문장 기본",
+title:"부정문 만들기",
+pattern:"don't / doesn't + 동사원형",
+explanation:"무언가를 하지 않는다고 말할 때 사용해요. be동사는 뒤에 not을 붙이고, 일반동사는 don't 또는 doesn't를 사용해요.",
+examples:[
+["I don't know.","나 몰라."],
+["She doesn't eat meat.","그녀는 고기를 먹지 않아."],
+["I'm not ready.","나 준비 안 됐어."]
+]
+},
+{
+category:"01. 문장 기본",
+title:"질문 만들기",
+pattern:"Do you...? / Are you...?",
+explanation:"일반동사 질문은 Do/Does로 시작하고, be동사 질문은 be동사를 앞으로 보내요.",
+examples:[
+["Do you like it?","그거 좋아해?"],
+["Are you busy?","바빠?"],
+["Does he work here?","그는 여기서 일해?"]
+]
+},
+{
+category:"01. 문장 기본",
+title:"의문사로 질문하기",
+pattern:"What / Where / When / Why / How",
+explanation:"상대방에게 구체적인 정보를 물어볼 때 사용하는 표현이에요. 일상 대화에서 정말 자주 사용해요.",
+examples:[
+["What are you doing?","뭐 하고 있어?"],
+["Where do you live?","어디 살아?"],
+["Why are you laughing?","왜 웃고 있어?"],
+["How was your day?","오늘 하루 어땠어?"]
+]
+},
+{
+category:"02. 시제",
+title:"현재: 평소의 일과 사실",
+pattern:"I work / I like / I live",
+explanation:"평소 반복하는 일, 습관, 변하지 않는 사실을 말할 때 사용해요.",
+examples:[
+["I usually wake up early.","나는 보통 일찍 일어나."],
+["I love cartoons.","나는 만화를 정말 좋아해."],
+["She works at a hospital.","그녀는 병원에서 일해."]
+]
+},
+{
+category:"02. 시제",
+title:"현재진행: 지금 하고 있는 일",
+pattern:"am / is / are + 동사-ing",
+explanation:"바로 지금 하고 있는 행동이나 요즘 진행 중인 일을 말할 때 사용해요.",
+examples:[
+["I'm watching TV.","나 TV 보고 있어."],
+["She's studying English.","그녀는 영어 공부 중이야."],
+["What are you doing?","뭐 하고 있어?"]
+]
+},
+{
+category:"02. 시제",
+title:"과거: 이미 끝난 일",
+pattern:"동사의 과거형",
+explanation:"어제, 지난주처럼 과거에 일어난 일을 말할 때 사용해요. 자주 쓰는 불규칙 동사도 문장으로 익혀 두면 좋아요.",
+examples:[
+["I went home early.","나 일찍 집에 갔어."],
+["I saw him yesterday.","나 어제 그를 봤어."],
+["We had a great time.","우리 정말 즐거웠어."]
+]
+},
+{
+category:"02. 시제",
+title:"미래: 앞으로 할 일",
+pattern:"be going to + 동사원형",
+explanation:"이미 생각해 둔 계획이나 앞으로 일어날 것 같은 일을 표현해요.",
+examples:[
+["I'm going to call her.","그녀에게 전화할 거야."],
+["We're going to travel.","우리 여행 갈 거야."],
+["It's going to rain.","비가 올 것 같아."]
+]
+},
+{
+category:"02. 시제",
+title:"will: 즉석에서 결정하거나 예상하기",
+pattern:"will + 동사원형",
+explanation:"말하는 순간 결정하거나 약속하고, 미래를 예상할 때 자주 사용해요. going to와 의미가 겹치는 경우도 많아요.",
+examples:[
+["I'll help you.","내가 도와줄게."],
+["I'll call you later.","나중에 전화할게."],
+["I think it'll be fun.","재밌을 것 같아."]
+]
+},
+{
+category:"02. 시제",
+title:"현재완료: 경험과 지금까지의 결과",
+pattern:"have / has + 과거분사",
+explanation:"과거의 경험이나 과거부터 지금까지 이어지는 일을 말할 때 사용해요. 모든 상황에서 과거형 대신 쓰는 것은 아니에요.",
+examples:[
+["I've been there before.","나 거기 가본 적 있어."],
+["I've never tried it.","나 그거 한 번도 안 해봤어."],
+["I've lived here for two years.","나 여기서 2년째 살고 있어."]
+]
+},
+{
+category:"03. 조동사",
+title:"can / could: 할 수 있음과 부탁",
+pattern:"can / could + 동사원형",
+explanation:"능력이나 가능성을 말할 때 can을 사용해요. Could you...?는 정중하게 부탁할 때 많이 사용해요.",
+examples:[
+["I can do it.","나 그거 할 수 있어."],
+["Can you help me?","나 좀 도와줄 수 있어?"],
+["Could you say that again?","다시 말해 주실래요?"]
+]
+},
+{
+category:"03. 조동사",
+title:"should: 조언과 의견",
+pattern:"should + 동사원형",
+explanation:"무언가를 하는 게 좋겠다고 조언하거나 자신의 생각을 말할 때 사용해요.",
+examples:[
+["You should get some rest.","좀 쉬는 게 좋겠어."],
+["I should go now.","나 이제 가야겠어."],
+["Should I call him?","그에게 전화하는 게 좋을까?"]
+]
+},
+{
+category:"03. 조동사",
+title:"have to: 해야 하는 일",
+pattern:"have to + 동사원형",
+explanation:"해야 할 의무나 필요가 있을 때 사용해요. don't have to는 하지 않아도 된다는 뜻이에요.",
+examples:[
+["I have to work tomorrow.","나 내일 일해야 해."],
+["You don't have to wait.","기다릴 필요 없어."],
+["Do we have to leave now?","우리 지금 떠나야 해?"]
+]
+},
+{
+category:"04. 동사 표현",
+title:"want to / need to",
+pattern:"want to + 동사 / need to + 동사",
+explanation:"하고 싶은 것과 해야 하는 것을 표현하는 기본 패턴이에요. 회화에서 정말 많이 사용해요.",
+examples:[
+["I want to learn English.","영어를 배우고 싶어."],
+["I need to talk to you.","너랑 이야기해야 해."],
+["Do you want to come?","너도 올래?"]
+]
+},
+{
+category:"04. 동사 표현",
+title:"like / enjoy + 동사-ing",
+pattern:"like / enjoy + 동사-ing",
+explanation:"좋아하는 취미나 즐기는 행동을 말할 때 사용해요. like는 to부정사도 사용할 수 있어요.",
+examples:[
+["I enjoy cooking.","나는 요리하는 걸 즐겨."],
+["She likes reading.","그녀는 독서를 좋아해."],
+["I love spending time with you.","너와 시간 보내는 게 정말 좋아."]
+]
+},
+{
+category:"04. 동사 표현",
+title:"동사 + 전치사 표현",
+pattern:"listen to / wait for / look at",
+explanation:"영어에서는 특정 동사 뒤에 특정 전치사가 자연스럽게 따라오는 경우가 많아요. 이 표현들은 단어별로 번역하기보다 덩어리로 익히는 게 좋아요.",
+examples:[
+["I'm listening to music.","나 음악 듣고 있어."],
+["I'm waiting for you.","나 너 기다리고 있어."],
+["Look at this!","이것 좀 봐!"],
+["I'm thinking about you.","너에 대해 생각하고 있어."]
+]
+},
+{
+category:"05. 관사",
+title:"a / an: 하나의, 어떤",
+pattern:"a book / an apple",
+explanation:"셀 수 있는 단수 명사를 처음 말하거나 특정하지 않은 하나를 말할 때 사용해요. 모음 글자 여부가 아니라 모음 소리로 an을 선택해요.",
+examples:[
+["I bought a book.","책 한 권 샀어."],
+["She ate an apple.","그녀는 사과 하나를 먹었어."],
+["He's a teacher.","그는 선생님이야."]
+]
+},
+{
+category:"05. 관사",
+title:"the: 서로 알고 있는 바로 그것",
+pattern:"the book / the person",
+explanation:"말하는 사람과 듣는 사람이 어떤 것인지 알 수 있거나, 이미 언급한 대상을 다시 말할 때 주로 사용해요.",
+examples:[
+["I saw a dog. The dog was cute.","개 한 마리를 봤어. 그 개는 귀여웠어."],
+["Close the door.","문 닫아 줘."],
+["Where's the bathroom?","화장실 어디예요?"]
+]
+},
+{
+category:"05. 관사",
+title:"관사를 사용하지 않는 경우",
+pattern:"I like music. / I drink water.",
+explanation:"일반적인 의미로 말하는 복수 명사나 셀 수 없는 명사 앞에는 보통 관사를 붙이지 않아요. 모든 명사에 a나 the가 필요한 건 아니에요.",
+examples:[
+["I like dogs.","나는 개를 좋아해."],
+["I need water.","물이 필요해."],
+["Music makes me happy.","음악은 나를 행복하게 해."]
+]
+},
+{
+category:"06. 전치사",
+title:"in / on / at: 시간",
+pattern:"in the morning / on Monday / at 7",
+explanation:"시간을 말할 때 자주 사용하는 세 가지예요. 대체로 in은 넓은 기간, on은 날짜와 요일, at은 정확한 시각에 사용해요.",
+examples:[
+["I was born in July.","나는 7월에 태어났어."],
+["I'll see you on Monday.","월요일에 보자."],
+["The meeting starts at 3.","회의는 3시에 시작해."]
+]
+},
+{
+category:"06. 전치사",
+title:"in / on / at: 장소",
+pattern:"in a room / on a table / at home",
+explanation:"장소를 표현할 때 in은 공간 안, on은 표면 위, at은 특정 지점이나 장소를 나타낼 때 자주 사용해요. 실제 표현에 따라 달라질 수 있어요.",
+examples:[
+["I'm in my room.","나 내 방에 있어."],
+["Your phone is on the table.","네 휴대폰 탁자 위에 있어."],
+["I'm at home.","나 집에 있어."]
+]
+},
+{
+category:"06. 전치사",
+title:"to / from: 이동과 출발",
+pattern:"go to / come from",
+explanation:"to는 목적지나 방향, from은 출발한 곳이나 출처를 나타내요.",
+examples:[
+["I'm going to school.","나 학교 가는 중이야."],
+["She came from Japan.","그녀는 일본에서 왔어."],
+["I sent a message to him.","그에게 메시지를 보냈어."]
+]
+},
+{
+category:"06. 전치사",
+title:"for / with / about",
+pattern:"for you / with me / about it",
+explanation:"for는 목적이나 대상을, with는 함께하거나 동반하는 것을, about은 주제를 말할 때 자주 사용해요.",
+examples:[
+["This is for you.","이건 너를 위한 거야."],
+["I went with my friend.","친구와 함께 갔어."],
+["Let's talk about it.","그것에 대해 이야기하자."]
+]
+},
+{
+category:"06. 전치사",
+title:"in / into / out of",
+pattern:"in = 안에 / into = 안으로 / out of = 밖으로",
+explanation:"in은 안에 있는 상태, into는 바깥에서 안으로 이동하는 느낌이에요. out of는 안에서 밖으로 나오는 움직임을 나타내요.",
+examples:[
+["The keys are in my bag.","열쇠가 가방 안에 있어."],
+["She walked into the room.","그녀는 방 안으로 걸어 들어갔어."],
+["Get out of the car.","차에서 내려."]
+]
+},
+{
+category:"06. 전치사",
+title:"전치사가 붙는 자연스러운 표현",
+pattern:"good at / interested in / afraid of",
+explanation:"어떤 형용사는 특정 전치사와 자주 함께 사용돼요. 이런 표현은 한 덩어리로 기억하면 문장을 만들기 쉬워져요.",
+examples:[
+["I'm good at cooking.","나 요리 잘해."],
+["I'm interested in art.","나는 미술에 관심 있어."],
+["She's afraid of dogs.","그녀는 개를 무서워해."]
+]
+},
+{
+category:"07. 문장 연결",
+title:"and / but / so / because",
+pattern:"문장 + and / but / so / because",
+explanation:"짧은 문장을 자연스럽게 연결하면 더 길고 매끄러운 대화를 할 수 있어요.",
+examples:[
+["I was tired, so I went home.","피곤해서 집에 갔어."],
+["I like it, but it's expensive.","마음에 들지만 비싸."],
+["I'm happy because you're here.","네가 여기 있어서 행복해."]
+]
+},
+{
+category:"07. 문장 연결",
+title:"if / when: 조건과 시간",
+pattern:"if = 만약 / when = ~할 때",
+explanation:"조건이나 어떤 일이 일어나는 시점을 말할 때 사용해요.",
+examples:[
+["Call me if you need help.","도움이 필요하면 전화해."],
+["Let me know when you arrive.","도착하면 알려 줘."],
+["If it rains, we'll stay home.","비가 오면 집에 있을 거야."]
+]
+},
+{
+category:"08. 자연스러운 표현",
+title:"비교하기",
+pattern:"-er / more / the most",
+explanation:"두 가지를 비교하거나 가장 정도가 높은 것을 말할 때 사용해요. 짧은 형용사는 보통 -er, 긴 형용사는 more를 사용하는 경우가 많아요.",
+examples:[
+["This is cheaper.","이게 더 저렴해."],
+["She's taller than me.","그녀는 나보다 키가 커."],
+["It's the most beautiful place.","여기가 가장 아름다운 곳이야."]
+]
+},
+{
+category:"08. 자연스러운 표현",
+title:"There is / There are",
+pattern:"There is + 단수 / There are + 복수",
+explanation:"어떤 장소에 무언가가 있다고 설명할 때 사용해요.",
+examples:[
+["There's a cafe nearby.","근처에 카페가 있어."],
+["There are two people outside.","밖에 두 사람이 있어."],
+["Is there a problem?","문제 있어?"]
+]
+},
+{
+category:"08. 자연스러운 표현",
+title:"경험과 제안 말하기",
+pattern:"Have you ever...? / How about...?",
+explanation:"경험을 물어보거나 상대방에게 자연스럽게 제안할 때 활용해요.",
+examples:[
+["Have you ever been to London?","런던에 가본 적 있어?"],
+["How about getting some coffee?","커피 한잔하는 거 어때?"],
+["Why don't we watch a movie?","우리 영화 보는 거 어때?"]
+]
+}
+];
+
+const quizzes = [
+{cat:"문장 기본",q:"'그녀는 커피를 좋아해.'",a:["She like coffee.","She likes coffee.","She liking coffee."],correct:1,why:"현재형에서 she, he, it 뒤에는 보통 동사에 -s가 붙어요."},
+{cat:"문장 기본",q:"'너 바빠?'에 맞는 문장은?",a:["Do you busy?","Are you busy?","You are busy?"],correct:1,why:"busy는 상태를 나타내므로 be동사 Are를 사용해요."},
+{cat:"시제",q:"'나 지금 밥 먹고 있어.'",a:["I eat now.","I'm eating now.","I eating now."],correct:1,why:"지금 하고 있는 행동은 am/is/are + ing로 표현해요."},
+{cat:"시제",q:"'나 내일 그녀에게 전화할 거야.'",a:["I'm going to call her tomorrow.","I'm going call her tomorrow.","I going to call her tomorrow."],correct:0,why:"be going to 뒤에는 동사원형을 사용해요."},
+{cat:"조동사",q:"'다시 말해 주실래요?'",a:["Could you say that again?","Could you to say that again?","Could you saying that again?"],correct:0,why:"could 뒤에는 동사원형이 와요."},
+{cat:"동사 표현",q:"'나 음악 듣는 중이야.'",a:["I'm listening music.","I'm listening to music.","I'm listening for music."],correct:1,why:"listen은 보통 listen to 형태로 사용해요."},
+{cat:"관사",q:"'나는 사과 하나를 먹었어.'",a:["I ate a apple.","I ate an apple.","I ate the apple."],correct:1,why:"apple은 모음 소리로 시작하기 때문에 an을 사용해요."},
+{cat:"관사",q:"처음 언급하는 일반적인 책 한 권은?",a:["a book","the book","book"],correct:0,why:"특정하지 않은 셀 수 있는 단수 명사에는 보통 a를 붙여요."},
+{cat:"관사",q:"'나는 음악을 좋아해.'",a:["I like a music.","I like the music.","I like music."],correct:2,why:"음악을 일반적인 의미로 말할 때는 관사를 붙이지 않아요."},
+{cat:"전치사",q:"'월요일에 만나자.'",a:["in Monday","on Monday","at Monday"],correct:1,why:"요일 앞에는 보통 on을 사용해요."},
+{cat:"전치사",q:"'나는 집에 있어.'",a:["I'm at home.","I'm on home.","I'm to home."],correct:0,why:"at home은 통째로 익혀 두면 좋은 자연스러운 표현이에요."},
+{cat:"전치사",q:"'나는 너를 기다리고 있어.'",a:["I'm waiting to you.","I'm waiting for you.","I'm waiting at you."],correct:1,why:"wait은 보통 wait for 형태로 사용해요."},
+{cat:"전치사",q:"'나는 요리를 잘해.'",a:["I'm good in cooking.","I'm good at cooking.","I'm good for cooking."],correct:1,why:"잘하는 일을 말할 때 be good at을 사용해요."},
+{cat:"전치사",q:"'그녀는 방 안으로 들어갔어.'",a:["She walked in the room.","She walked into the room.","She walked at the room."],correct:1,why:"밖에서 안으로 이동하는 움직임은 into로 표현할 수 있어요."},
+{cat:"문장 연결",q:"'피곤해서 집에 갔어.'",a:["I was tired, so I went home.","I was tired, but I went home.","I was tired, because I went home."],correct:0,why:"so는 앞의 상황 때문에 뒤의 결과가 생겼다는 것을 연결해요."},
+{cat:"자연스러운 표현",q:"'근처에 카페가 있어.'",a:["There have a cafe nearby.","There is a cafe nearby.","It have a cafe nearby."],correct:1,why:"어떤 장소에 무언가가 있다고 말할 때 There is를 사용해요."}
+];
+
+let lessonIndex = 0;
+let quizIndex = 0;
+let answered = false;
+
+function getData(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+  catch(e) { return fallback; }
+}
+function saveData(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+function completed() {
+  return getData("speakGrammarDone", []);
+}
+function showProgress() {
+  const done = completed();
+  const count = Number(localStorage.getItem("speakGrammarCorrect") || 0);
+  const percent = Math.round(done.length / lessons.length * 100);
+  document.getElementById("stats").textContent =
+    done.length + " / " + lessons.length + "개 학습 완료 · 정답 " + count + "개";
+  document.getElementById("progressBar").style.width = percent + "%";
+  document.getElementById("progressText").textContent =
+    "전체 학습 진도 " + percent + "%";
+  document.querySelectorAll(".lesson-item").forEach((b,i) => {
+    b.classList.toggle("done", done.includes(i));
+  });
+}
+function buildLessonList() {
+  const list = document.getElementById("lessonList");
+  list.innerHTML = "";
+  lessons.forEach((lesson,i) => {
+    const b = document.createElement("button");
+    b.className = "lesson-item";
+    b.textContent = (i+1) + ". " + lesson.title;
+    b.onclick = () => { lessonIndex=i; showLesson(); };
+    list.appendChild(b);
+  });
+}
+function showLesson() {
+  const l = lessons[lessonIndex];
+  document.getElementById("lessonCategory").textContent = l.category;
+  document.getElementById("lessonNumber").textContent =
+    "LESSON " + (lessonIndex+1) + " / " + lessons.length;
+  document.getElementById("lessonTitle").textContent = l.title;
+  document.getElementById("lessonPattern").textContent = l.pattern;
+  document.getElementById("lessonExplanation").textContent = l.explanation;
+  const area = document.getElementById("lessonExamples");
+  area.innerHTML = "";
+  l.examples.forEach(e => {
+    const div = document.createElement("div");
+    div.className = "example";
+    const strong = document.createElement("strong");
+    strong.textContent = e[0];
+    const small = document.createElement("small");
+    small.textContent = e[1];
+    div.append(strong,small);
+    area.appendChild(div);
+  });
+  document.querySelectorAll(".lesson-item").forEach((b,i) =>
+    b.classList.toggle("active", i===lessonIndex)
+  );
+  document.getElementById("writingPrompt").textContent =
+    "오늘의 패턴: " + l.pattern + " — 이 표현을 활용해 나만의 문장을 만들어 보세요.";
+}
+function completeLesson() {
+  const done = completed();
+  if (!done.includes(lessonIndex)) {
+    done.push(lessonIndex);
+    saveData("speakGrammarDone",done);
+  }
+  showProgress();
+  buildLessonList();
+  showLesson();
+}
+function nextLesson() {
+  lessonIndex = (lessonIndex+1) % lessons.length;
+  showLesson();
+}
+function previousLesson() {
+  lessonIndex = (lessonIndex-1+lessons.length) % lessons.length;
+  showLesson();
+}
+function showQuiz() {
+  answered = false;
+  const q = quizzes[quizIndex];
+  document.getElementById("quizCategory").textContent = q.cat;
+  document.getElementById("quizQuestion").textContent = q.q;
+  document.getElementById("feedback").textContent = "";
+  const area = document.getElementById("quizOptions");
+  area.innerHTML = "";
+  q.a.forEach((choice,i) => {
+    const b = document.createElement("button");
+    b.className = "option";
+    b.textContent = choice;
+    b.onclick = () => answerQuiz(i);
+    area.appendChild(b);
+  });
+}
+function answerQuiz(i) {
+  if(answered) return;
+  answered = true;
+  const q = quizzes[quizIndex];
+  const buttons = document.querySelectorAll(".option");
+  buttons.forEach((b,index) => {
+    b.disabled = true;
+    if(index===q.correct) b.classList.add("correct");
+    if(index===i && i!==q.correct) b.classList.add("wrong");
+  });
+  const feedback = document.getElementById("feedback");
+  if(i===q.correct) {
+    feedback.textContent = "🎉 정답이에요! " + q.why;
+    const count = Number(localStorage.getItem("speakGrammarCorrect") || 0);
+    localStorage.setItem("speakGrammarCorrect",count+1);
+  } else {
+    feedback.textContent = "정답은 " + q.a[q.correct] + " 이에요. " + q.why;
+  }
+  showProgress();
+}
+function nextQuiz() {
+  quizIndex = (quizIndex+1) % quizzes.length;
+  showQuiz();
+}
+function saveSentence() {
+  const input = document.getElementById("mySentence");
+  const sentence = input.value.trim();
+  if(!sentence) {
+    document.getElementById("sentenceResult").textContent =
+      "먼저 영어 문장을 입력해 주세요!";
+    return;
+  }
+  const saved = getData("speakGrammarSentences",[]);
+  saved.unshift({text:sentence,date:new Date().toLocaleDateString("ko-KR")});
+  saveData("speakGrammarSentences",saved);
+  input.value = "";
+  document.getElementById("sentenceResult").textContent =
+    "✨ 나만의 문장을 저장했어요!";
+  showSentences();
+}
+function showSentences() {
+  const saved = getData("speakGrammarSentences",[]);
+  const area = document.getElementById("savedSentences");
+  if(!saved.length) {
+    area.textContent = "아직 저장한 문장이 없어요.";
+    return;
+  }
+  area.innerHTML = "";
+  saved.forEach((item,i) => {
+    const div = document.createElement("div");
+    div.className = "example";
+    const strong = document.createElement("strong");
+    strong.textContent = item.text;
+    const small = document.createElement("small");
+    small.textContent = item.date;
+    div.append(strong,small);
+    area.appendChild(div);
+  });
+}
+
+buildLessonList();
+showLesson();
+showQuiz();
+showProgress();
+showSentences();
+</script>
+</body>
+</html>
