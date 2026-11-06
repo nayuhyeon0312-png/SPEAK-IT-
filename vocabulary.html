@@ -72,8 +72,20 @@ const elapsed = Math.floor(
 const dayIndex = Math.max(0,elapsed);
 const words = wordPacks[dayIndex];
 
-let saved = JSON.parse(
-  localStorage.getItem("speakItProgress") || "{}"
+let saved = {};
+
+try {
+  saved = JSON.parse(
+    localStorage.getItem("speakItProgress") || "{}"
+  );
+
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+    saved = {};
+  }
+} catch (error) {
+  saved = {};
+  localStorage.setItem("speakItProgress", "{}");
+}
 );
 
 function speak(text) {
