@@ -13,10 +13,7 @@ body {
   background: #f7f8fc;
   color: #30364a;
 }
-.container {
-  max-width: 800px;
-  margin: auto;
-}
+.container { max-width: 850px; margin: auto; }
 h1 { color: #6578d3; }
 .card {
   background: white;
@@ -25,14 +22,15 @@ h1 { color: #6578d3; }
   margin: 18px 0;
   box-shadow: 0 4px 15px #0000000a;
 }
-input {
+input, textarea {
   width: 100%;
-  padding: 14px;
+  padding: 13px;
   border: 1px solid #ddd;
   border-radius: 10px;
   font-size: 15px;
-  margin: 10px 0;
+  margin: 8px 0;
 }
+textarea { min-height: 150px; resize: vertical; }
 button {
   border: 0;
   border-radius: 10px;
@@ -49,18 +47,42 @@ button {
   background: #222;
   border-radius: 14px;
   overflow: hidden;
+  position: relative;
 }
-iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+#player { width: 100%; height: 100%; }
+.subtitle-overlay {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 7%;
+  text-align: center;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
-.tip {
+.subtitle-line {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  margin: auto;
+  padding: 7px 12px;
+  border-radius: 7px;
+  color: white;
+  background: #000c;
+  font-size: clamp(14px, 3vw, 22px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#englishSubtitle { color: #fff; }
+#koreanSubtitle { color: #ffe6a8; }
+.note {
   background: #f0f2ff;
-  padding: 15px;
+  padding: 14px;
   border-radius: 12px;
   line-height: 1.7;
 }
+.status { color: #6578d3; font-size: 14px; }
 a { color: #6578d3; }
 </style>
 </head>
@@ -68,66 +90,179 @@ a { color: #6578d3; }
 <div class="container">
   <a href="index.html">← 홈으로</a>
   <h1>🎧 Listening</h1>
-  <p>카툰과 영상으로 자연스러운 영어 듣기에 익숙해져 봐요!</p>
+  <p>영어와 한국어 자막을 함께 보며 듣기 연습을 해 봐요!</p>
+
   <div class="card">
-    <h2>📺 영상 불러오기</h2>
-    <p>유튜브 영상 주소를 붙여넣어 주세요.</p>
-    <input id="videoUrl" placeholder="YouTube 영상 주소를 입력하세요">
+    <h2>📺 유튜브 영상</h2>
+    <input id="videoUrl" placeholder="유튜브 영상 주소를 입력하세요">
     <button onclick="loadVideo()">영상 불러오기</button>
+    <p id="videoStatus" class="status">영상 주소를 입력해 주세요.</p>
   </div>
+
   <div class="card">
     <h2>▶️ 영상 플레이어</h2>
-    <div class="video" id="player">
-      <p style="color:white;text-align:center;padding:30px;">
-        영상을 불러오면 여기에 표시돼요.
-      </p>
+    <div class="video">
+      <div id="player"></div>
+      <div class="subtitle-overlay">
+        <div id="englishSubtitle" class="subtitle-line"></div>
+        <div id="koreanSubtitle" class="subtitle-line"></div>
+      </div>
     </div>
+    <p class="note">
+      자막은 영상 재생 시간에 맞춰 표시돼요.
+      아래에 영어와 한국어 SRT 자막 내용을 넣어 주세요.
+    </p>
   </div>
+
   <div class="card">
-    <h2>💡 듣기 연습 방법</h2>
-    <div class="tip">
-      <p><b>1. 먼저 자막 없이 들어보기</b><br>
-      전체적인 상황과 대화를 파악해 봐요.</p>
-      <p><b>2. 영어 자막과 함께 들어보기</b><br>
-      들리지 않았던 단어와 표현을 확인해요.</p>
-      <p><b>3. 한 문장씩 따라 말하기</b><br>
-      등장인물의 발음과 억양을 흉내 내 봐요.</p>
-      <p><b>4. 다시 자막 없이 들어보기</b><br>
-      처음보다 얼마나 잘 들리는지 확인해요.</p>
-    </div>
+    <h2>🇺🇸 영어 자막</h2>
+    <textarea id="englishSrt" placeholder="영어 SRT 자막 내용을 붙여넣으세요."></textarea>
+
+    <h2>🇰🇷 한국어 자막</h2>
+    <textarea id="koreanSrt" placeholder="한국어 SRT 자막 내용을 붙여넣으세요."></textarea>
+
+    <button onclick="loadSubtitles()">자막 적용하기</button>
+    <p id="subtitleStatus" class="status">아직 자막이 적용되지 않았어요.</p>
   </div>
 </div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-function loadVideo() {
-  const url = document.getElementById("videoUrl").value.trim();
-  const player = document.getElementById("player");
-  let videoId = "";
+let player = null;
+let englishCaptions = [];
+let koreanCaptions = [];
+let syncTimer = null;
+
+function getVideoId(url) {
   try {
     const parsed = new URL(url);
     if (parsed.hostname.includes("youtu.be")) {
-      videoId = parsed.pathname.slice(1);
-    } else if (parsed.hostname.includes("youtube.com")) {
-      videoId = parsed.searchParams.get("v") || "";
-      if (!videoId && parsed.pathname.includes("/shorts/")) {
-        videoId = parsed.pathname.split("/shorts/")[1].split("/")[0];
-      }
+      return parsed.pathname.split("/")[1] || "";
     }
-  } catch (error) {
-    videoId = "";
-  }
-  if (!videoId) {
-    alert("올바른 유튜브 주소를 입력해 주세요!");
+    if (parsed.hostname.includes("youtube.com")) {
+      return parsed.searchParams.get("v") ||
+        (parsed.pathname.includes("/shorts/")
+          ? parsed.pathname.split("/shorts/")[1].split("/")[0]
+          : "");
+    }
+  } catch (e) {}
+  return "";
+}
+
+function loadVideo() {
+  const id = getVideoId(document.getElementById("videoUrl").value.trim());
+
+  if (!id) {
+    alert("올바른 유튜브 주소를 입력해 주세요.");
     return;
   }
-  player.innerHTML = `
-    <iframe
-      src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?cc_load_policy=1"
-      title="YouTube video player"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowfullscreen>
-    </iframe>
-  `;
+
+  if (typeof YT === "undefined" || !YT.Player) {
+    document.getElementById("videoStatus").textContent =
+      "유튜브 플레이어를 불러오는 중이에요. 잠시 후 다시 눌러 주세요.";
+    return;
+  }
+
+  if (player && player.destroy) {
+    player.destroy();
+  }
+
+  player = new YT.Player("player", {
+    videoId: id,
+    playerVars: {
+      playsinline: 1,
+      rel: 0
+    },
+    events: {
+      onReady: function() {
+        document.getElementById("videoStatus").textContent =
+          "영상이 준비됐어요!";
+        startSync();
+      },
+      onError: function() {
+        document.getElementById("videoStatus").textContent =
+          "이 영상은 외부 사이트 재생이 제한되어 있을 수 있어요.";
+      }
+    }
+  });
 }
+
+function parseSrt(text) {
+  const blocks = text.trim().replace(/\r/g, "").split(/\n\s*\n/);
+  const result = [];
+
+  for (const block of blocks) {
+    const lines = block.split("\n");
+    const timeLine = lines.find(line => line.includes("-->"));
+    if (!timeLine) continue;
+
+    const match = timeLine.match(
+      /(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/
+    );
+    if (!match) continue;
+
+    const toSeconds = (h, m, s, ms) =>
+      Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(ms) / 1000;
+
+    const start = toSeconds(...match.slice(1, 5));
+    const end = toSeconds(...match.slice(5, 9));
+    const textLines = lines.slice(lines.indexOf(timeLine) + 1);
+
+    const captionText = textLines.join(" ")
+      .replace(/<[^>]*>/g, "")
+      .trim();
+
+    if (captionText) result.push({ start, end, text: captionText });
+  }
+
+  return result.sort((a, b) => a.start - b.start);
+}
+
+function loadSubtitles() {
+  const enText = document.getElementById("englishSrt").value;
+  const koText = document.getElementById("koreanSrt").value;
+
+  englishCaptions = parseSrt(enText);
+  koreanCaptions = parseSrt(koText);
+
+  if (!englishCaptions.length && !koreanCaptions.length) {
+    document.getElementById("subtitleStatus").textContent =
+      "읽을 수 있는 SRT 자막이 없어요. 자막 형식을 확인해 주세요.";
+    return;
+  }
+
+  document.getElementById("subtitleStatus").textContent =
+    "영어 " + englishCaptions.length + "개 / 한국어 " +
+    koreanCaptions.length + "개 자막을 적용했어요!";
+  updateSubtitles();
+}
+
+function findCaption(captions, time) {
+  return captions.find(item => time >= item.start && time <= item.end);
+}
+
+function updateSubtitles() {
+  if (!player || !player.getCurrentTime) return;
+
+  const time = player.getCurrentTime();
+  const en = findCaption(englishCaptions, time);
+  const ko = findCaption(koreanCaptions, time);
+
+  document.getElementById("englishSubtitle").textContent =
+    en ? en.text : "";
+  document.getElementById("koreanSubtitle").textContent =
+    ko ? ko.text : "";
+}
+
+function startSync() {
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(updateSubtitles, 250);
+}
+
+window.onYouTubeIframeAPIReady = function() {
+  document.getElementById("videoStatus").textContent =
+    "유튜브 플레이어를 사용할 준비가 됐어요.";
+};
 </script>
 </body>
 </html>
