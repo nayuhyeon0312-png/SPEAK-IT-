@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPEAK IT! - Vocabulary</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .vocab-page {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+    .vocab-top {
+      background: #eee8ff;
+      padding: 28px;
+      border-radius: 24px;
+      margin-bottom: 24px;
+    }
+    .word-card {
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      margin: 14px 0;
+      box-shadow: 0 3px 12px #0000000b;
+    }
+    .word-card h3 {
+      margin: 0 0 8px;
+      font-size: 23px;
+    }
+    .meaning {
+      color: #7956b8;
+      font-weight: bold;
+    }
+    .example {
+      background: #f8f6ff;
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+    .word-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .word-actions button {
+      border: 0;
+      border-radius: 20px;
+      padding: 9px 14px;
+      cursor: pointer;
+      background: #eee8ff;
+      color: #60458e;
+      font-weight: bold;
+    }
+    .word-actions button.selected {
+      background: #b9e8d1;
+      color: #245d43;
+    }
+    .progress-track {
+      background: #ddd5ef;
+      height: 12px;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .progress-fill {
+      background: #8c6bd1;
+      height: 100%;
+      width: 0%;
+      transition: width .2s;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #7956b8;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <main class="vocab-page">
+    <a class="back-link" href="index.html">← Back to Home</a>
+
+    <section class="vocab-top">
+      <p>YOUR DAILY VOCABULARY ✨</p>
+      <h1>DAY 01 - Let's get started!</h1>
+      <p>오늘의 새로운 영어 표현 40개를 만나 봐요.</p>
+      <h2 id="progressText">0 / 40 learned</h2>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </section>
+
+    <div id="wordList"></div>
+  </main>
+
+  <script>
+    const words = [
+      ["actually", "사실은, 실제로", "Actually, I don't know.", "사실 나도 몰라."],
+      ["probably", "아마도", "He's probably at home.", "그는 아마 집에 있을 거야."],
+      ["especially", "특히", "I love cartoons, especially funny ones.", "나는 만화를 좋아해. 특히 웃긴 만화를."],
+      ["already", "이미, 벌써", "I already told you.", "나 이미 너한테 말했어."],
+      ["almost", "거의", "I'm almost ready.", "나 거의 준비됐어."],
+      ["enough", "충분히", "That's enough for me.", "난 그 정도면 충분해."],
+      ["instead", "대신에", "Let's stay home instead.", "대신 집에 있자."],
+      ["maybe", "어쩌면, 아마", "Maybe you're right.", "어쩌면 네 말이 맞을지도 몰라."],
+      ["seriously", "진심으로, 정말", "Are you seriously doing that?", "너 진짜 그걸 하는 거야?"],
+      ["definitely", "분명히, 확실히", "I'll definitely come.", "나 꼭 갈게."],
+
+      ["excited", "신이 난, 기대되는", "I'm so excited!", "나 정말 신나!"],
+      ["nervous", "긴장한", "I'm a little nervous.", "나 조금 긴장돼."],
+      ["confused", "혼란스러운", "I'm so confused.", "나 너무 헷갈려."],
+      ["embarrassed", "당황스러운, 창피한", "That was embarrassing.", "그거 정말 창피했어."],
+      ["disappointed", "실망한", "I'm disappointed in myself.", "나 자신에게 실망했어."],
+      ["curious", "궁금한, 호기심 많은", "I'm curious about that.", "그게 궁금해."],
+      ["relieved", "안도한", "I'm relieved to hear that.", "그 말을 들으니 안심이야."],
+      ["annoyed", "짜증 난", "He's getting annoyed.", "그는 점점 짜증이 나고 있어."],
+      ["proud", "자랑스러운", "I'm proud of you.", "네가 자랑스러워."],
+      ["awkward", "어색한", "This is so awkward.", "이거 너무 어색해."],
+
+      ["figure out", "알아내다, 해결하다", "I'll figure it out.", "내가 알아낼게."],
+      ["find out", "알게 되다, 알아내다", "I just found out.", "나 방금 알았어."],
+      ["give up", "포기하다", "Don't give up.", "포기하지 마."],
+      ["pick up", "집다, 데리러 가다", "Can you pick me up?", "나 데리러 와 줄래?"],
+      ["turn out", "결국 ~로 밝혀지다", "It turned out fine.", "결국 잘됐어."],
+      ["run into", "우연히 만나다", "I ran into an old friend.", "오랜 친구를 우연히 만났어."],
+      ["calm down", "진정하다", "Just calm down.", "일단 진정해."],
+      ["hang out", "어울려 놀다", "Let's hang out tomorrow.", "내일 같이 놀자."],
+      ["come up with", "생각해 내다", "I came up with an idea.", "나 아이디어 하나 생각해 냈어."],
+      ["deal with", "대처하다, 다루다", "I'll deal with it.", "내가 처리할게."],
+
+      ["What's going on?", "무슨 일이야?", "Hey, what's going on?", "이봐, 무슨 일이야?"],
+      ["No way!", "말도 안 돼!", "No way! Is that true?", "말도 안 돼! 그게 사실이야?"],
+      ["It depends.", "상황에 따라 달라.", "It depends on the weather.", "날씨에 따라 달라."],
+      ["That makes sense.", "그거 말 되네.", "Oh, that makes sense.", "아, 그거 말 되네."],
+      ["I'm on my way.", "가는 중이야.", "I'm on my way home.", "나 집에 가는 중이야."],
+      ["You never know.", "사람 일은 모르는 거야.", "You never know what might happen.", "무슨 일이 일어날지 모르는 거야."],
+      ["It's up to you.", "네가 결정해.", "It's up to you.", "네가 정해."],
+      ["I have no idea.", "전혀 모르겠어.", "I have no idea what happened.", "무슨 일이 있었는지 전혀 모르겠어."],
+      ["Take your time.", "천천히 해.", "Take your time. I'm not in a hurry.", "천천히 해. 나 안 급해."],
+      ["Sounds good!", "좋아! 괜찮네!", "Sounds good! Let's do it.", "좋아! 그렇게 하자."]
+    ];
+
+    const saved = JSON.parse(
+      localStorage.getItem("speakItDay01") || "{}"
+    );
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      speechSynthesis.speak(utterance);
+    }
+
+    function updateProgress() {
+      const count = Object.values(saved).filter(
+        value => value === "known"
+      ).length;
+
+      document.getElementById("progressText").textContent =
+        count + " / 40 learned";
+
+      document.getElementById("progressFill").style.width =
+        (count / 40 * 100) + "%";
+    }
+
+    function renderWords() {
+      const list = document.getElementById("wordList");
+
+      list.innerHTML = words.map((word, index) => `
+        <article class="word-card">
+          <h3>${index + 1}. ${word[0]}</h3>
+          <p class="meaning">${word[1]}</p>
+
+          <div class="example">
+            <p>${word[2]}</p>
+            <p>${word[3]}</p>
+          </div>
+
+          <div class="word-actions">
+            <button onclick="speak(words[${index}][0])">
+              🔊 단어 듣기
+            </button>
+            <button onclick="speak(words[${index}][2])">
+              🔊 예문 듣기
+            </button>
+            <button class="${saved[index] === 'known' ? 'selected' : ''}"
+              onclick="setStatus(${index}, 'known')">
+              ✓ 알고 있어요
+            </button>
+            <button class="${saved[index] === 'review' ? 'selected' : ''}"
+              onclick="setStatus(${index}, 'review')">
+              ↻ 복습 필요
+            </button>
+          </div>
+        </article>
+      `).join("");
+
+      updateProgress();
+    }
+
+    function setStatus(index, status) {
+      if (saved[index] === status) {
+        delete saved[index];
+      } else {
+        saved[index] = status;
+      }
+
+      localStorage.setItem(
+        "speakItDay01",
+        JSON.stringify(saved)
+      );
+
+      renderWords();
+    }
+
+    renderWords();
+  </script>
+</body>
+</html>
