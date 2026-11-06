@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPEAK IT! - Speaking</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 22px 16px 40px;
+  font-family: Arial, sans-serif;
+  background: #f7f8ff;
+  color: #30334a;
+}
+.wrap { max-width: 650px; margin: auto; }
+.back {
+  display: inline-block;
+  margin-bottom: 22px;
+  color: #777b99;
+  text-decoration: none;
+}
+h1 { margin-bottom: 8px; font-size: 29px; }
+.sub { color: #8588a0; line-height: 1.6; }
+.card {
+  margin-top: 22px;
+  padding: 24px 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px #30334a0d;
+}
+.tag {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: #eeeaff;
+  color: #7461c8;
+  font-size: 13px;
+  font-weight: bold;
+}
+#question {
+  margin: 20px 0 10px;
+  font-size: 25px;
+  line-height: 1.45;
+}
+#translation {
+  color: #8588a0;
+  line-height: 1.6;
+}
+button {
+  border: 0;
+  border-radius: 12px;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.listen { background: #eeeaff; color: #6854bd; }
+.primary { background: #7867d8; color: white; }
+.secondary { background: #f0f1f8; color: #555975; }
+.buttons { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+textarea {
+  width: 100%;
+  min-height: 125px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e2e3ef;
+  border-radius: 13px;
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+textarea:focus { outline: 2px solid #c9c0ff; }
+.hint { color: #999bb0; font-size: 13px; line-height: 1.6; }
+#status { margin-top: 13px; color: #6e61bd; font-weight: bold; }
+.progress {
+  height: 9px;
+  margin-top: 12px;
+  overflow: hidden;
+  background: #e9eaf3;
+  border-radius: 20px;
+}
+#bar {
+  height: 100%;
+  width: 0%;
+  background: #8978e8;
+  transition: width .2s;
+}
+#count { color: #8588a0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 홈으로 돌아가기</a>
+
+  <h1>🗣️ Speaking</h1>
+  <p class="sub">매일 질문에 영어로 대답하면서 자연스럽게 말하는 연습을 해봐요!</p>
+
+  <div class="card">
+    <div id="count">Question 1 / 10</div>
+    <div class="progress"><div id="bar"></div></div>
+    <br>
+    <span class="tag" id="category">Daily Life</span>
+    <h2 id="question"></h2>
+    <p id="translation"></p>
+
+    <div class="buttons">
+      <button class="listen" onclick="speakQuestion()">🔊 질문 듣기</button>
+      <button class="secondary" onclick="showTranslation()">뜻 보기</button>
+    </div>
+    <p class="hint" id="meaningHint">먼저 영어 질문을 이해해 보고, 뜻이 궁금하면 눌러 보세요.</p>
+  </div>
+
+  <div class="card">
+    <h3>✍️ My Answer</h3>
+    <p class="sub">정답은 없어요. 배운 표현을 활용해서 자유롭게 대답해 보세요.</p>
+    <textarea id="answer" placeholder="Write your answer in English..."></textarea>
+    <p class="hint">먼저 직접 소리 내어 말한 다음, 영어로 답변을 적어 보세요.</p>
+    <div class="buttons">
+      <button class="primary" onclick="saveAnswer()">답변 저장하기</button>
+      <button class="secondary" onclick="speakAnswer()">내 답변 듣기</button>
+      <button class="secondary" onclick="markComplete()">연습 완료 ✓</button>
+    </div>
+    <p id="status"></p>
+  </div>
+
+  <div class="buttons" style="justify-content:space-between; margin-top:20px;">
+    <button class="secondary" onclick="moveQuestion(-1)">← 이전 질문</button>
+    <button class="primary" onclick="moveQuestion(1)">다음 질문 →</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    category: "Daily Life",
+    en: "What do you usually do in the morning?",
+    ko: "너는 보통 아침에 무엇을 해?"
+  },
+  {
+    category: "Feelings",
+    en: "What makes you happy?",
+    ko: "무엇이 너를 행복하게 만들어?"
+  },
+  {
+    category: "Food",
+    en: "What's your favorite food, and why?",
+    ko: "가장 좋아하는 음식은 뭐고, 그 이유는 뭐야?"
+  },
+  {
+    category: "Memories",
+    en: "What's a fun memory you have?",
+    ko: "네가 가진 즐거운 추억은 뭐야?"
+  },
+  {
+    category: "Opinions",
+    en: "Do you prefer staying home or going out?",
+    ko: "집에 있는 것과 외출하는 것 중 어느 쪽을 더 좋아해?"
+  },
+  {
+    category: "Hobbies",
+    en: "What do you like to do in your free time?",
+    ko: "여가 시간에 무엇을 하는 걸 좋아해?"
+  },
+  {
+    category: "Plans",
+    en: "What do you want to do this weekend?",
+    ko: "이번 주말에 무엇을 하고 싶어?"
+  },
+  {
+    category: "People",
+    en: "Who do you enjoy spending time with?",
+    ko: "누구와 함께 시간을 보내는 걸 좋아해?"
+  },
+  {
+    category: "Dreams",
+    en: "What's something you've always wanted to try?",
+    ko: "네가 항상 해보고 싶었던 일은 뭐야?"
+  },
+  {
+    category: "Free Talk",
+    en: "If you could travel anywhere, where would you go?",
+    ko: "어디든 여행할 수 있다면 어디로 가고 싶어?"
+  }
+];
+
+let current = 0;
+const answers = JSON.parse(localStorage.getItem("speakItSpeakingAnswers") || "{}");
+const completed = JSON.parse(localStorage.getItem("speakItSpeakingCompleted") || "[]");
+
+function render() {
+  const q = questions[current];
+  document.getElementById("count").textContent =
+    `Question ${current + 1} / ${questions.length}`;
+  document.getElementById("bar").style.width =
+    `${((current + 1) / questions.length) * 100}%`;
+  document.getElementById("category").textContent = q.category;
+  document.getElementById("question").textContent = q.en;
+  document.getElementById("translation").textContent = "";
+  document.getElementById("meaningHint").textContent =
+    "먼저 영어 질문을 이해해 보고, 뜻이 궁금하면 눌러 보세요.";
+  document.getElementById("answer").value = answers[current] || "";
+  document.getElementById("status").textContent =
+    completed.includes(current) ? "이 질문은 연습 완료했어요! ✓" : "";
+}
+
+function showTranslation() {
+  document.getElementById("translation").textContent = questions[current].ko;
+}
+
+function speakQuestion() {
+  speakText(questions[current].en);
+}
+
+function speakAnswer() {
+  const value = document.getElementById("answer").value.trim();
+  if (!value) {
+    document.getElementById("status").textContent =
+      "먼저 영어 답변을 입력해 주세요.";
+    return;
+  }
+  speakText(value);
+}
+
+function speakText(text) {
+  if (!("speechSynthesis" in window)) {
+    document.getElementById("status").textContent =
+      "이 브라우저에서는 음성 듣기를 지원하지 않아요.";
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = 0.85;
+  window.speechSynthesis.speak(utterance);
+}
+
+function saveAnswer() {
+  answers[current] = document.getElementById("answer").value.trim();
+  localStorage.setItem("speakItSpeakingAnswers", JSON.stringify(answers));
+  document.getElementById("status").textContent = "답변이 저장됐어요! 💜";
+}
+
+function markComplete() {
+  answers[current] = document.getElementById("answer").value.trim();
+  localStorage.setItem("speakItSpeakingAnswers", JSON.stringify(answers));
+
+  if (!completed.includes(current)) completed.push(current);
+  localStorage.setItem("speakItSpeakingCompleted", JSON.stringify(completed));
+
+  document.getElementById("status").textContent =
+    `연습 완료! 지금까지 ${completed.length}개 질문을 연습했어요. 🎉`;
+}
+
+function moveQuestion(direction) {
+  saveAnswer();
+  current = (current + direction + questions.length) % questions.length;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
